@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>To-Do Boards</title>
+  <style>
+    body { font-family: Arial; background: #f9f9f9; padding: 20px; }
+    .container { max-width: 600px; margin: auto; background: #fff; padding: 20px; border-radius: 10px; }
+    input, button { padding: 10px; margin: 5px 0; width: 100%; }
+    .board-list { margin-top: 20px; }
+    .board-item { padding: 10px; background: #e6e6e6; border-radius: 5px; margin-bottom: 10px; cursor: pointer; }
+    .board-item:hover { background: #ccc; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Your To-Do Boards</h1>
+    <input id="boardName" placeholder="Enter new board name..." />
+    <button onclick="createBoard()">+ Create Board</button>
+    <div class="board-list" id="boardList"></div>
+  </div>
+
+  <script>
+    const boardList = document.getElementById('boardList');
+    const savedBoards = JSON.parse(localStorage.getItem('boardNames') || '[]');
+
+    function renderBoards() {
+      boardList.innerHTML = '';
+      savedBoards.forEach(name => {
+        const div = document.createElement('div');
+        div.className = 'board-item';
+        div.textContent = name;
+        div.onclick = () => window.location.href = `board.html?name=${encodeURIComponent(name)}`;
+        boardList.appendChild(div);
+      });
+    }
+
+    function createBoard() {
+      const name = document.getElementById('boardName').value.trim();
+      if (!name || savedBoards.includes(name)) return alert("Invalid or duplicate board name.");
+      savedBoards.push(name);
+      localStorage.setItem('boardNames', JSON.stringify(savedBoards));
+      localStorage.setItem(`kanbanBoard_${name}`, JSON.stringify([])); // empty board
+      renderBoards();
+      document.getElementById('boardName').value = '';
+    }
+
+    renderBoards();
+  </script>
+</body>
+</html>
