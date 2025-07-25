@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Login - Quick List</title>
+  <style>
+    body { font-family: Arial; background: #f2f2f2; padding: 40px; }
+    .container { max-width: 400px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    input, button { width: 100%; padding: 10px; margin: 10px 0; }
+    h2 { text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Quick List Login</h2>
+    <input type="text" id="username" placeholder="Username" />
+    <input type="password" id="password" placeholder="Password" />
+    <button onclick="login()">Log In</button>
+    <button onclick="signup()">Sign Up</button>
+    <p id="msg" style="color:red;"></p>
+  </div>
+
+  <script>
+    function login() {
+      const user = document.getElementById('username').value.trim();
+      const pass = document.getElementById('password').value;
+      const stored = JSON.parse(localStorage.getItem('users') || '{}');
+      if (stored[user] === pass) {
+        localStorage.setItem('loggedInUser', user);
+        window.location.href = 'index.html';
+      } else {
+        document.getElementById('msg').innerText = 'Invalid login.';
+      }
+    }
+
+    function signup() {
+      const user = document.getElementById('username').value.trim();
+      const pass = document.getElementById('password').value;
+      if (!user || !pass) return alert('Fill both fields.');
+      const stored = JSON.parse(localStorage.getItem('users') || '{}');
+      if (stored[user]) return alert('Username taken.');
+      stored[user] = pass;
+      localStorage.setItem('users', JSON.stringify(stored));
+      alert('Account created. You can log in now.');
+    }
+  </script>
+</body>
+</html>
