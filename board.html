@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Board</title>
+  <style>
+    body { font-family: Arial; margin: 0; padding: 20px; background: #f2f2f2; }
+    h1 { text-align: center; }
+    #board { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 20px; }
+    .step { background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 10px; min-width: 220px; flex-shrink: 0; display: flex; flex-direction: column; }
+    .step-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .step input { width: 100%; font-weight: bold; border: none; font-size: 1em; background: transparent; }
+    .notes { flex-grow: 1; min-height: 50px; }
+    .note { padding: 5px; margin: 5px 0; border: 1px solid #ccc; cursor: grab; position: relative; border-radius: 4px; }
+    .note button { position: absolute; top: 2px; right: 5px; background: transparent; border: none; color: red; font-weight: bold; cursor: pointer; }
+    button { margin-top: 5px; cursor: pointer; }
+    #addStepBtn { margin: 10px auto 20px; display: block; }
+    .color-picker { display: flex; gap: 5px; margin-top: 5px; }
+    .color-swatch { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #333; cursor: pointer; }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .top-bar button { padding: 8px 12px; }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <h1 id="boardTitle">Board</h1>
+    <button onclick="window.location.href='index.html'">← Back</button>
+  </div>
+  <button id="addStepBtn">+ Add Step</button>
+  <div id="board"></div>
+
+  <script>
+    const board = document.getElementById('board');
+    const addStepBtn = document.getElementById('addStepBtn');
+    const boardName = new URLSearchParams(window.location.search).get('name');
+    if (!boardName) location.href = 'index.html';
+    document.getElementById('boardTitle').innerText = boardName;
+
+    let stepCount = 0;
+    const COLORS = ['#fffdd0', '#c0f0fc', '#ffc0cb', '#d0ffd0', '#fcd0fc'];
+
+    function saveBoard() {
+      const data = [];
+      board.querySelectorAll('.step').forEach(step => {
+        const name = step.querySelector('input').value;
+        const notes = [];
+        step.querySelectorAll('.note').forEach(note => {
+          notes.push({
+            text: note.innerText.replace('x', '').trim(),
+            color: note.style.backgroundColor || '#fffdd0'
+          });
+        });
+        data.push({ name, notes });
+      });
+      localStorage.setItem(`kanbanBoard_${boardName}`, JSON.stringify(data));
+    }
+
+    function createStep(name = `Step ${++stepCount}`, noteData = []) {
+      const step = document.createElement('div');
+      step.className = 'step';
+      step.innerHTML = `
+        <div class="step-header">
+          <input value="${name}" />
+          <button class="del-step">🗑️</button>
+        </div>
+        <div class="notes" ondragover="event.preventDefault()"></div>
+        <button class="add-note">+ Add Sticky Note</button>
+      `;
+      board.appendChild(step);
+
+      step.querySelector('input').addEventListener('input', saveBoard);
+      step.querySelector('.del-step').onclick = () => {
+        board.removeChild(step);
+        saveBoard();
+      };
+
+      const notesDiv = step.querySelector('.notes');
+
+      step.querySelector('.add-note').onclick = () => {
+        const picker = document.createElement('div');
+        picker.className = 'color-picker';
+        COLORS.forEach(color => {
+          const swatch = document.createElement('div');
+          swatch.className = 'color-swatch';
+          swatch.style.backgroundColor = color;
+          swatch.onclick = () => {
+            const note = createNote('New Note', color);
+            notesDiv.appendChild(note);
+            picker.remove();
+            saveBoard();
+          };
+          picker.appendChild(swatch);
+        });
+        step.appendChild(picker);
+        setTimeout(() => document.addEventListener('click', () => picker.remove(), { once: true }), 10);
+      };
+
+      notesDiv.ondrop = (e) => {
+        const noteId = e.dataTransfer.getData('text/plain');
+        const dragged = document.getElementById(noteId);
+        if (dragged) notesDiv.appendChild(dragged);
+        saveBoard();
+      };
+
+      noteData.forEach(n => {
+        const note = createNote(n.text, n.color);
+        notesDiv.appendChild(note);
+      });
+    }
+
+    function createNote(text = '', color = '#fffdd0') {
+      const note = document.createElement('div');
+      const id = 'note-' + Math.random().toString(36).substr(2, 9);
+      note.className = 'note';
+      note.id = id;
+      note.setAttribute('draggable', 'true');
+      note.style.backgroundColor = color;
+      note.contentEditable = true;
+      note.innerText = text;
+
+      const delBtn = document.createElement('button');
+      delBtn.innerText = 'x';
+      delBtn.onclick = (e) => {
+        e.stopPropagation();
+        note.remove();
+        saveBoard();
+      };
+      note.appendChild(delBtn);
+
+      note.ondragstart = (e) => {
+        e.dataTransfer.setData('text/plain', id);
+      };
+      note.oninput = saveBoard;
+
+      return note;
+    }
+
+    addStepBtn.onclick = () => {
+      createStep();
+      saveBoard();
+    };
+
+    // Load from localStorage
+    const saved = localStorage.getItem(`kanbanBoard_${boardName}`);
+    if (saved) {
+      const data = JSON.parse(saved);
+      data.forEach(s => createStep(s.name, s.notes));
+    } else {
+      ['To Do', 'In Progress', 'Done'].forEach(name => createStep(name));
+    }
+  </script>
+</body>
+</html>
